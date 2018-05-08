@@ -1,12 +1,12 @@
 #!/bin/bash
 
 # 03.05.2018 thanh.truong 
-# prepare data for waw.scp, text, spk2utt
+# prepare data for waw.scp, text, spk2utt, utt2spk
 
 # Setup relevant folders
 WAV_ROOT="/home/kinkin/workspace/kaldi/02.source/kaldi/egs/mytrain/wav"
 TRAIN_ROOT="/home/kinkin/workspace/kaldi/02.source/kaldi/egs/mytrain/data/train"
-utils="utils"
+utils="/home/kinkin/workspace/kaldi/02.source/kaldi/egs/mytrain/utils"
 
 # Setup wav folders
 if [ ! -d $WAV_ROOT ]; then
@@ -69,7 +69,39 @@ done
 sort temp.txt >> $textfile
 rm -f temp.txt
 
+#Create utt2spk file
+utt2spk="$TRAIN_ROOT/utt2spk"
+rm -f "$utt2spk"
+echo "Creating $utt2spk"
 
+for d in $(find $WAV_ROOT -maxdepth 1 -type d -printf '%f\n')
+do
+ 
+  	sub_folder=$WAV_ROOT
+  	sub_folder+="/"
+  	sub_folder+="$d"
+  	if [ -d "$sub_folder" ]; then
+    	allfile=`ls $sub_folder/`
+		for one in $allfile
+		do
+
+			if [ ${one: -4} == ".wav" ]; then			
+				name=`echo "$one" | sed s/.wav//`
+				name=`echo -e "$name\t\t$d"`
+				echo $name >> temp.txt
+			fi
+		done
+	fi
+	
+done
+sort temp.txt >> $utt2spk
+rm -f temp.txt
+
+#Create spk2utt file
+spk2utt="$TRAIN_ROOT/spk2utt"
+rm -f "$spk2utt"
+echo "Creating $spk2utt"
+cat "$utt2spk" | $utils/utt2spk_to_spk2utt.pl > "$spk2utt" 
 
 echo "--> Data preparation succeeded"
 exit 0
